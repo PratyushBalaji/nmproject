@@ -22,8 +22,8 @@ import time
 
 
 # Variables to store progress :
-foundStations = set() # Stores all the stations that have been found so far.
-missingStations = list(stationInfo.stationDict.keys()) # Stores all the stations that haven't been found yet.
+foundStations = set() # Stores all the stations that have been found so far. This is a set to optimize lookups as order doesn't matter here
+missingStations = list(stationInfo.stationDict.keys()) # Stores all the stations that haven't been found yet. This is a list as random.choice() needs a list argument
 totalNumberOfStations = len(stationInfo.stationDict) # Total number of known stations.
 hintsUsed = 0 # Number of hints used
 
