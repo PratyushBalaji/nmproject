@@ -159,6 +159,8 @@ alternativeStationNames = {
     'kadugodi': 'whitefield (kadugodi)',
     'mg road': 'mahatma gandhi road',
     'huskur road':'huskur road (veerasandra)',
-    'veerasandra':'huskur road (veerasandra)'
+    'veerasandra':'huskur road (veerasandra)',
+    'sv road':'swami vivekananda road',
+    'majestic':'nadaprabhu kempegowda majestic'
     # Add more mappings as necessary
 }
