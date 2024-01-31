@@ -2,7 +2,28 @@ import stationInfo
 import random
 import os
 import time
+import json
 
+def save_game():
+    save_data = {
+        'foundStations': list(foundStations),
+        'missingStations': missingStations,
+        'hintsUsed': hintsUsed,
+        'foundStationsPerLine': foundStationsPerLine
+    }
+    with open('game_save.json', 'w') as f:
+        json.dump(save_data, f)
+    print("Game saved successfully.")
+def load_game():
+    global foundStations, missingStations, hintsUsed, startTime, totalPauseTime, foundStationsPerLine
+    with open('game_save.json', 'r') as f:
+        save_data = json.load(f)
+    foundStations = set(save_data['foundStations'])
+    missingStations = save_data['missingStations']
+    hintsUsed = save_data['hintsUsed']
+    foundStationsPerLine = save_data['foundStationsPerLine']
+    print("Game loaded successfully.")
+    
 # Inspired by metro-memory tube game
 # Text input where user types in a station name
 # If station exists in the dictionary :
@@ -58,7 +79,7 @@ def statistics():
     minutes, seconds = divmod(int(elapsedTime), 60)
     timeString = f"{minutes} minutes, {seconds} seconds" if minutes else f"{seconds} seconds"
     print("Your current statistics: ")
-    print(f"You have been playing for {timeString}")
+    print(f"Your current session has been on for {timeString}")
     
     # Tracking stats
     print(f'Hints Used : {hintsUsed}')
@@ -95,18 +116,17 @@ def pause():
     os.system('cls')
     
     global lastPauseTime, totalPauseTime
-    currentTime = time.time()
-    elapsedTime = currentTime - startTime - totalPauseTime
-    minutes, seconds = divmod(int(elapsedTime), 60)
-    timeString = f"{minutes} minutes, {seconds} seconds" if minutes else f"{seconds} seconds"
-    print(f"You have been playing for {timeString}")
+    
+    statistics()
     
     lastPauseTime = time.time()  # Record when the pause started
     while True:
-        pauseInput = input("The game is paused, type 'play' to continue: ")
-        if pauseInput.strip().lower() == 'play':
+        pauseInput = input("The game is paused, type 'play' to continue: ").strip().lower()
+        if pauseInput == 'play':
             totalPauseTime += time.time() - lastPauseTime  # Update total pause time
             break
+        if pauseInput == 'found':
+            listFound()
 
 welcomeMessage = '''
 Hello, and welcome to the Namma Metro Memory Game!
@@ -129,6 +149,15 @@ totalPauseTime = 0
 lastPauseTime = 0
 
 print(welcomeMessage)
+if os.path.exists('game_save.json'):
+    while True:
+        choice = input("Do you want to load the saved game? (yes/no): ").strip().lower()
+        if choice == 'yes':
+            load_game()
+            break
+        elif choice == 'no':
+            os.remove('game_save.json')  # Delete the save file if starting a new game
+            break
 
 while True:
     if len(foundStations) == totalNumberOfStations:
@@ -165,6 +194,9 @@ while True:
         continue
     if userInput == 'quit':
         break
+    if userInput == 'save':
+        save_game()
+        continue
     
     # Input is a guess
     if stationGuess in stationInfo.stationDict:
