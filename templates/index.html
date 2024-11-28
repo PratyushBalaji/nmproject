@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Namma Metro Memory Game</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map { height: 400px; margin-top: 20px; }
+        body { font-family: Arial, sans-serif; }
+        .stats { margin-top: 20px; }
+        .message { margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Welcome to the Namma Metro Memory Game!</h1>
+    <form id="guess-form">
+        <input type="text" id="stationName" placeholder="Enter Station Name" required>
+        <button type="submit">Submit</button>
+    </form>
+    <div class="message" id="message"></div>
+    <div class="stats" id="stats"></div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        // Leaflet map setup
+        var map = L.map('map').setView([12.9716, 77.5946], 12); // Centered at Bangalore
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Store markers for all stations
+        const stationMarkers = {};
+
+        // Ensure stationDict is provided safely
+        const stationDict = {{ stationDict|tojson }};
+        console.log('Loaded Station Data:', stationDict);
+
+        // Function to add station markers to the map
+        function addStationMarkers() {
+            for (let station in stationDict) {
+                let lines = stationDict[station].join(', ');
+                // Add marker with dummy coordinates; replace with real coordinates if available
+                const marker = L.marker([12.9716 + Math.random() * 0.1, 77.5946 + Math.random() * 0.1], {
+                    color: 'blue', // Default color
+                })
+                    .addTo(map)
+                    .bindPopup(`${station} (${lines})`);
+                stationMarkers[station] = marker; // Store marker by station name
+            }
+        }
+
+        // Handle form submission
+        $('#guess-form').on('submit', function (e) {
+            e.preventDefault();
+            const stationName = $('#stationName').val();
+            console.log('Submitting station:', stationName); // Debugging
+            $.ajax({
+                url: '/guess',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ stationName }),
+                success: function (response) {
+                    console.log('Response:', response); // Debugging
+                    $('#message')
+                        .text(response.message)
+                        .css('color', response.status === 'success' ? 'green' : response.status === 'info' ? 'orange' : 'red');
+
+                    // Update marker color if station is found
+                    if (response.status === 'success') {
+                        const station = response.station; // Backend sends the found station name
+                        if (stationMarkers[station]) {
+                            stationMarkers[station].setIcon(
+                                L.icon({
+                                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', // Green marker
+                                    iconSize: [25, 41],
+                                    iconAnchor: [12, 41],
+                                    popupAnchor: [1, -34],
+                                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', // Shadow
+                                    shadowSize: [41, 41],
+                                    shadowAnchor: [12, 41],
+                                })
+                            );
+                        }
+                    }
+
+                    updateStats();
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error:', xhr.responseText); // Debugging
+                    $('#message').text('Error processing your request.').css('color', 'red');
+                },
+            });
+        });
+
+        // Fetch and display statistics
+        function updateStats() {
+            $.get('/stats', function (data) {
+                $('#stats').html(`
+                    <p><strong>Time Elapsed:</strong> ${data.time}</p>
+                    <p><strong>Stations Found:</strong> ${data.stationsFound} / ${data.stationsLeft}</p>
+                    <p><strong>Completion:</strong> ${data.percentage}%</p>
+                `);
+            });
+        }
+
+        // Initialize map with station markers and fetch initial stats
+        addStationMarkers();
+        updateStats();
+    </script>
+</body>
+</html>
